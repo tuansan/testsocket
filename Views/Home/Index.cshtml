@@ -1,24 +1,50 @@
-﻿@model int
+﻿@model int 
 @{
     ViewData["Title"] = "Home Page";
 }
 
 <input type=text id="textInput" placeholder="Enter your text" />
 <button id="sendButton">Send</button>
+<div id="display-xacnhan" style="display: none">
+    <button id="okButton">Ok</button>
+    <button id="cancelButton">Cancel</button>
+</div>
+<div id="display-KetThuc" style="display: none">
+    <button id="KetThucButton">KetThuc</button>
+</div>
 
 <ul id="messages"></ul>
 <script language="javascript" type="text/javascript">
-    var uri = "wss://" + window.location.host + "/cm";
+    var id = @Model;
+    if (id == 0)
+        id = Math.floor(Math.random() * 10000) + 1;
+    var uri = "wss://" + window.location.host + "/cm?_=" + id;
     function connect() {
         socket = new WebSocket(uri);
         socket.onopen = function (event) {
-            sendMessage("UpdateKey", "@Model");
+            sendMessage("Chat", "Connected");
         };
         socket.onclose = function (event) {
             console.log("closed connection from " + uri);
         };
         socket.onmessage = function (event) {
-            appendItem(list, event.data);
+            var data = event.data.split("||");
+            switch (data[0]) {
+                case "Chat":
+                    appendItem(list, data[1]);
+                    break;
+                case "DatXe":
+                    document.getElementById('display-xacnhan').style.display = "block";
+                    appendItem(list, "Có người đặt xe");
+                    break;
+                case "BatDau":
+                    document.getElementById('display-KetThuc').style.display = "block";
+                    appendItem(list, "Bat dau");
+                    break;
+                default:
+                    appendItem(list, data);
+                    break;
+            }
             console.log(event.data);
         };
         socket.onerror = function (event) {
@@ -28,11 +54,29 @@
     connect();
     var list = document.getElementById("messages");
     var button = document.getElementById("sendButton");
+    var buttonOk = document.getElementById("okButton");
+    var buttonCancel = document.getElementById("cancelButton");
+    var buttonKetThuc = document.getElementById("KetThucButton");
     button.addEventListener("click", function () {
         var input = document.getElementById("textInput");
-        sendMessage("Show", input.value);
+        if (id < 10)
+            sendMessage("DatXe", input.value);
+        else
+            sendMessage("Show", input.value);
 
         input.value = "";
+    });
+    buttonOk.addEventListener("click", function () {
+        document.getElementById('display-xacnhan').style.display = "none";
+        sendMessage("Ok");
+    });
+    buttonCancel.addEventListener("click", function () {
+        document.getElementById('display-xacnhan').style.display = "none";
+        sendMessage("Cancel");
+    });
+    buttonKetThuc.addEventListener("click", function () {
+        document.getElementById('display-KetThuc').style.display = "none";
+        sendMessage("KetThuc");
     });
     function sendMessage(action, text) {
         socket.send(JSON.stringify({ Action: action, Text: text }));

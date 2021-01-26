@@ -14,17 +14,9 @@ namespace NetSockets.Controllers
 {
     public class HomeController : Controller
     {
-        private readonly Random _random = new Random();
-
-        public int RandomNumber(int min, int max)
-        {
-            return _random.Next(min, max);
-        }
 
         public IActionResult Index(int id = 0)
         {
-            if (id == 0)
-                id = RandomNumber(1, 10000);
             return View(id);
         }
 

@@ -26,7 +26,7 @@ namespace NetSockets
                 return;
 
             var socket = await context.WebSockets.AcceptWebSocketAsync();
-            await _webSocketHandler.OnConnected(socket);
+            _webSocketHandler.OnConnected(socket, context.Request.Query["_"].ToString());
 
             await Receive(socket, async (result, buffer) =>
             {

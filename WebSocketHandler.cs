@@ -17,9 +17,9 @@ namespace NetSockets
             WebSocketConnectionManager = webSocketConnectionManager;
         }
 
-        public virtual async Task OnConnected(WebSocket socket)
+        public virtual void OnConnected(WebSocket socket, string key)
         {
-            WebSocketConnectionManager.AddSocket(socket);
+            WebSocketConnectionManager.AddSocket(socket, key);
         }
 
         public virtual async Task OnDisconnected(WebSocket socket)
@@ -29,15 +29,19 @@ namespace NetSockets
 
         public async Task SendMessageAsync(WebSocket socket, string message)
         {
-            if (socket.State != WebSocketState.Open)
-                return;
+            try
+            {
+                if (socket.State != WebSocketState.Open)
+                    return;
 
-            await socket.SendAsync(buffer: new ArraySegment<byte>(array: Encoding.ASCII.GetBytes(message),
-                                                                  offset: 0,
-                                                                  count: message.Length),
-                                   messageType: WebSocketMessageType.Text,
-                                   endOfMessage: true,
-                                   cancellationToken: CancellationToken.None);
+                await socket.SendAsync(buffer: new ArraySegment<byte>(array: Encoding.ASCII.GetBytes(message),
+                                                                      offset: 0,
+                                                                      count: message.Length),
+                                       messageType: WebSocketMessageType.Text,
+                                       endOfMessage: true,
+                                       cancellationToken: CancellationToken.None);
+            }
+            catch { }
         }
 
         public async Task SendMessageAsync(string socketId, string message)

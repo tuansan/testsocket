@@ -22,35 +22,34 @@ namespace NetSockets
             return _sockets;
         }
 
-        public string GetId(WebSocket socket)
+        public IList<string> GetAllLaiXe()
         {
-            return _sockets.FirstOrDefault(p => p.Value == socket).Key;
-        } 
-
-        public void AddSocket(WebSocket socket)
-        {
-            _sockets.TryAdd(CreateConnectionId(), socket);
+            return _sockets.Where(p => int.Parse(p.Key) > 10).Take(20).Select(s => s.Key).ToList();
         }
 
-        public void UpdateKey(string id, string newKey)
+        public string GetId(WebSocket socket)
+        {
+            return _sockets.LastOrDefault(p => p.Value == socket).Key?? string.Empty;
+        }
+
+        public void AddSocket(WebSocket socket, string key)
+        {
+            _sockets.TryAdd(key, socket);
+        }
+
+        public async Task UpdateKeyAsync(string id, string newKey)
         {
             _sockets.TryRemove(id, out WebSocket socket);
+            await RemoveSocket(newKey);
             _sockets.TryAdd(newKey, socket);
         }
 
         public async Task RemoveSocket(string id)
         {
-            WebSocket socket;
-            _sockets.TryRemove(id, out socket);
-
-            await socket.CloseAsync(closeStatus: WebSocketCloseStatus.NormalClosure,
-                                    statusDescription: "Closed by the ConnectionManager",
-                                    cancellationToken: CancellationToken.None);
-        }
-
-        private string CreateConnectionId()
-        {
-            return Guid.NewGuid().ToString();
+            if (_sockets.TryRemove(id, out WebSocket socket))
+                await socket.CloseAsync(closeStatus: WebSocketCloseStatus.NormalClosure,
+                                        statusDescription: "Closed by the ConnectionManager",
+                                        cancellationToken: CancellationToken.None);
         }
     }
 }
