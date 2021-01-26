@@ -18,7 +18,7 @@
     var id = @Model;
     if (id == 0)
         id = Math.floor(Math.random() * 10000) + 1;
-    var uri = "wss://" + window.location.host + "/cm?_=" + id;
+    var uri = "wss://" + window.location.host + "/websocket?_=" + id;
     function connect() {
         socket = new WebSocket(uri);
         socket.onopen = function (event) {
@@ -57,8 +57,21 @@
     var buttonOk = document.getElementById("okButton");
     var buttonCancel = document.getElementById("cancelButton");
     var buttonKetThuc = document.getElementById("KetThucButton");
+
+    var input = document.getElementById("textInput");
+
+    // Execute a function when the user releases a key on the keyboard
+    input.addEventListener("keyup", function (event) {
+        // Number 13 is the "Enter" key on the keyboard
+        if (event.keyCode === 13) {
+            // Cancel the default action, if needed
+            event.preventDefault();
+            // Trigger the button element with a click
+            button.click();
+        }
+    });
+
     button.addEventListener("click", function () {
-        var input = document.getElementById("textInput");
         if (id < 10)
             sendMessage("DatXe", input.value);
         else
@@ -84,6 +97,6 @@
     function appendItem(list, message) {
         var item = document.createElement("li");
         item.appendChild(document.createTextNode(message));
-        list.appendChild(item);
+        list.insertBefore(item, list.firstChild);
     }
 </script>

@@ -24,28 +24,28 @@ namespace NetSockets
         {
             if (!context.WebSockets.IsWebSocketRequest)
                 return;
-
-            var socket = await context.WebSockets.AcceptWebSocketAsync();
-            _webSocketHandler.OnConnected(socket, context.Request.Query["_"].ToString());
-
-            await Receive(socket, async (result, buffer) =>
+            using (WebSocket socket = await context.WebSockets.AcceptWebSocketAsync())
             {
-                if (result.MessageType == WebSocketMessageType.Text)
+                _webSocketHandler.OnConnected(socket, context.Request.Query["_"].ToString());
+                await Receive(socket, async (result, buffer) =>
                 {
-                    await _webSocketHandler.ReceiveAsync(socket, result, buffer);
-                    return;
-                }
+                    if (result.MessageType == WebSocketMessageType.Text)
+                    {
+                        await _webSocketHandler.ReceiveAsync(socket, result, buffer);
+                        return;
+                    }
 
-                else if (result.MessageType == WebSocketMessageType.Close)
-                {
-                    await _webSocketHandler.OnDisconnected(socket);
-                    return;
-                }
+                    else if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        await _webSocketHandler.OnDisconnected(socket);
+                        return;
+                    }
 
-            });
+                });
+            }
 
             //TODO - investigate the Kestrel exception thrown when this is the last middleware
-            //await _next.Invoke(context);
+            await _next.Invoke(context);
         }
 
         private async Task Receive(WebSocket socket, Action<WebSocketReceiveResult, byte[]> handleMessage)

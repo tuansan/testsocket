@@ -33,6 +33,17 @@ namespace NetSockets
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            var serviceScopeFactory = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>();
+            var serviceProvider = serviceScopeFactory.CreateScope().ServiceProvider;
+            var webSocketOptions = new WebSocketOptions()
+            {
+                KeepAliveInterval = TimeSpan.FromSeconds(120),
+                ReceiveBufferSize = 4 * 1024
+            };
+            webSocketOptions.AllowedOrigins.Add("*");
+            app.UseWebSockets();
+            app.MapWebSocketManager("/websocket", serviceProvider.GetService<ChatMessageHandler>());
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -43,12 +54,8 @@ namespace NetSockets
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
-            var serviceScopeFactory = app.ApplicationServices.GetRequiredService<IServiceScopeFactory>();
-            var serviceProvider = serviceScopeFactory.CreateScope().ServiceProvider;
 
             app.UseHttpsRedirection();
-            app.UseWebSockets();
-            app.MapWebSocketManager("/cm", serviceProvider.GetService<ChatMessageHandler>());
             app.UseStaticFiles();
 
             app.UseRouting();
