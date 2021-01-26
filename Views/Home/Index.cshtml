@@ -17,8 +17,8 @@
 <script language="javascript" type="text/javascript">
     var id = @Model;
     if (id == 0)
-        id = Math.floor(Math.random() * 10000) + 1;
-    var uri = "wss://" + window.location.host + "/websocket?_=" + id;
+        id = Math.floor(Math.random() * 10000) + 10;
+    var uri = `wss://${window.location.host}/websocket?id=${id}&local=${id*10}`;
     function connect() {
         socket = new WebSocket(uri);
         socket.onopen = function (event) {
@@ -74,7 +74,7 @@
     });
 
     button.addEventListener("click", function () {
-        if (id < 10)
+        if (id <= 10)
             sendMessage("DatXe", input.value);
         else
             sendMessage("Show", input.value);

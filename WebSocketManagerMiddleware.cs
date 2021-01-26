@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using NetSockets.Models;
 using System;
 using System.Net.WebSockets;
 using System.Threading;
@@ -24,7 +25,14 @@ namespace NetSockets
                 return;
             using (WebSocket socket = await context.WebSockets.AcceptWebSocketAsync())
             {
-                await _webSocketHandler.OnConnected(socket, context.Request.Query["_"].ToString());
+                string id = context.Request.Query["id"].ToString();
+                int local = int.Parse(id);
+                await _webSocketHandler.OnConnected(socket, new Key { 
+                    Id = id, 
+                    Name = id,
+                    Local = local * 123 + "",
+                    Role = local > 10 ? (int)ENVaiTro.TaiXe : (int)ENVaiTro.Khach
+                });
                 await Receive(socket, async (result, buffer) =>
                 {
                     if (result.MessageType == WebSocketMessageType.Text)

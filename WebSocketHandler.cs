@@ -1,4 +1,5 @@
-﻿using System.Net.WebSockets;
+﻿using NetSockets.Models;
+using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,9 +15,9 @@ namespace NetSockets
             WebSocketConnectionManager = webSocketConnectionManager;
         }
 
-        public virtual async Task OnConnected(WebSocket socket, string key)
+        public virtual async Task OnConnected(WebSocket socket, Key key)
         {
-            var sk = WebSocketConnectionManager.GetSocketById(key);
+            var sk = WebSocketConnectionManager.GetSocketById(key.Id);
             if (sk != null)
                 await WebSocketConnectionManager.RemoveSocket(key);
             await WebSocketConnectionManager.AddSocketAsync(socket, key);
@@ -39,6 +40,11 @@ namespace NetSockets
                                        cancellationToken: CancellationToken.None);
             }
             catch { }
+        }
+
+        public async Task SendMessageAsync(Key socketId, string message)
+        {
+            await SendMessageAsync(WebSocketConnectionManager.GetSocketById(socketId), message);
         }
 
         public async Task SendMessageAsync(string socketId, string message)

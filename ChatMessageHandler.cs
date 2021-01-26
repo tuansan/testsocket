@@ -12,12 +12,11 @@ namespace NetSockets
 {
     public class ChatMessageHandler : WebSocketHandler
     {
-        private readonly IDistributedCache _cache;
+        private readonly IDistributedCache _cachessss;
         private readonly Random _random = new Random();
 
-        public ChatMessageHandler(ConnectionManager webSocketConnectionManager, IDistributedCache cache) : base(webSocketConnectionManager)
+        public ChatMessageHandler(ConnectionManager webSocketConnectionManager) : base(webSocketConnectionManager)
         {
-            _cache = cache;
         }
 
         public int RandomNumber(int min, int max)
@@ -27,16 +26,15 @@ namespace NetSockets
 
         public override async Task OnDisconnected(WebSocket socket)
         {
-            var socketId = WebSocketConnectionManager.GetId(socket);
+            var key = WebSocketConnectionManager.GetId(socket);
             await base.OnDisconnected(socket);
-            if (!string.IsNullOrEmpty(socketId))
+            if (key != null)
             {
-                await SendMessageToAllAsync($"{socketId}: Disconnected");
+                await SendMessageToAllAsync($"{key.Name}: Disconnected");
             }
-            string nguoidatxe = _cache.GetString("TaiXe#" + socketId);
-            if (!string.IsNullOrEmpty(nguoidatxe))
+            if (key.Role == (int)ENVaiTro.TaiXe && key.Status != (int)ENTrangThaiTaiXe.RANH)
             {
-                await NextTaiXeAsync(nguoidatxe);
+                await NextTaiXeAsync(WebSocketConnectionManager.GetKeyById(key.TargetId));
             }
         }
 
@@ -44,65 +42,79 @@ namespace NetSockets
         {
             try
             {
-                var socketId = WebSocketConnectionManager.GetId(socket);
+                var user = WebSocketConnectionManager.GetId(socket);
                 var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
                 var param = JsonConvert.DeserializeObject<SocketModel>(message);
                 string res = string.Empty;
-                string taixe = string.Empty;
-                string nguoidat = string.Empty;
+                Key khach = new Key();
+                Key taixe = new Key();
 
                 switch (param.Action)
                 {
                     case "DatXe":
+                        khach = user;
+
                         var list = WebSocketConnectionManager.GetAllLaiXe();
-                        var check = _cache.GetString("NguoiDat#" + socketId);
-                        if (string.IsNullOrEmpty(check))
-                            check = _cache.GetString("NguoiDatDangChay#" + socketId);
-                        if (string.IsNullOrEmpty(check))
-                            await DatXeAsync(list, socketId);
+                        if (khach.Status == (int)ENTrangThaiKhach.RANH)
+                        {
+                            khach.TaiXes = list.Select(s => s.Id).ToList();
+                            khach.Status = (int)ENTrangThaiKhach.DANG_YEUCAU;
+                            WebSocketConnectionManager.UpdateKey(khach);
+                            await DatXeAsync(khach);
+                        }
                         break;
 
                     case "KetThuc":
-                        nguoidat = _cache.GetString("TaiXeDangChay#" + socketId);
-                        await _cache.RemoveAsync("TaiXeDangChay#" + socketId);
-                        await _cache.RemoveAsync("NguoiDatDangChay#" + nguoidat);
+                        taixe = user;
+                        khach = WebSocketConnectionManager.GetKeyById(taixe.TargetId);
+
+                        taixe.Status = (int)ENTrangThaiTaiXe.RANH;
+                        khach.Status = (int)ENTrangThaiKhach.RANH;
+
+                        WebSocketConnectionManager.UpdateKey(taixe);
+                        WebSocketConnectionManager.UpdateKey(khach);
+
+                        await SendMessageToAllAsync("---------------------------------");
                         break;
 
                     case "Ok":
-                        nguoidat = _cache.GetString("TaiXe#" + socketId);
-                        taixe = _cache.GetString("NguoiDat#" + nguoidat);
-                        if (taixe.Equals(socketId))
+                        taixe = user;
+                        khach = WebSocketConnectionManager.GetKeyById(taixe.TargetId);
+
+                        if (khach.TargetId.Equals(taixe.Id))
                         {
-                            var socketnguoidat = WebSocketConnectionManager.GetSocketById(nguoidat);
+                            var socketnguoidat = WebSocketConnectionManager.GetSocketById(khach);
                             if (socketnguoidat == null)
                             {
                                 await SendMessageAsync(socket, "Chat||" + "Nguoi dat da disconnected");
                             }
                             else
                             {
-                                await SendMessageAsync(socketnguoidat, "Chat||" + taixe + " da Ok");
-                                await SendMessageAsync(socket, "BatDau||" + "Da xac nhan don " + nguoidat);
-                                await _cache.RemoveAsync("NguoiDat#" + nguoidat);
-                                await _cache.RemoveAsync("TaiXe#" + taixe);
-                                await _cache.SetStringAsync("TaiXeDangChay#" + taixe, nguoidat);
-                                await _cache.SetStringAsync("NguoiDatDangChay#" + nguoidat, taixe);
+                                await SendMessageAsync(socketnguoidat, "Chat||" + taixe.Name + " da Ok");
+                                await SendMessageAsync(socket, "BatDau||" + "Da xac nhan don " + khach.Name);
+
+                                taixe.Status = (int)ENTrangThaiTaiXe.DANG_CHAY;
+                                khach.Status = (int)ENTrangThaiKhach.DANG_CHAY;
+
+                                WebSocketConnectionManager.UpdateKey(taixe);
+                                WebSocketConnectionManager.UpdateKey(khach);
                                 await SendMessageToAllAsync("---------------------------------");
                             }
                         }
                         break;
 
                     case "Cancel":
-                        nguoidat = _cache.GetString("TaiXe#" + socketId);
-                        taixe = _cache.GetString("NguoiDat#" + nguoidat);
-                        if (taixe.Equals(socketId))
+                        taixe = user;
+                        khach = WebSocketConnectionManager.GetKeyById(taixe.TargetId);
+                        if (khach.TargetId.Equals(taixe.Id))
                         {
-                            await NextTaiXeAsync(nguoidat);
+                            await NextTaiXeAsync(khach);
                             await SendMessageAsync(socket, "---------------------------------");
                         }
                         break;
 
                     default:
-                        res = "Chat||" + socketId + ": " + param.Text;
+                        res = "Chat||" + user.Name + ": " + param.Text;
                         await SendMessageToAllAsync(res);
                         break;
                 }
@@ -110,67 +122,63 @@ namespace NetSockets
             catch { }
         }
 
-        public async Task NextTaiXeAsync(string key)
+        public async Task NextTaiXeAsync(Key khach)
         {
-            string ListTaiXe = _cache.GetString("ListTaiXe#" + key);
-            if (string.IsNullOrEmpty(ListTaiXe))
+            if (khach.TaiXes.Count == 0)
             {
-                await KhongCoTaiXe(key);
+                await KhongCoTaiXe(khach);
             }
             else
             {
-                var list = ListTaiXe.Split(",").ToList();
-                var taixe = _cache.GetString("NguoiDat#" + key);
-                await _cache.RemoveAsync("TaiXe#" + taixe);
-                await DatXeAsync(list, key);
+                var taixe = WebSocketConnectionManager.GetKeyById(khach.TargetId);
+                taixe.TargetId = string.Empty;
+                taixe.Status = (int)ENTrangThaiTaiXe.RANH;
+                WebSocketConnectionManager.UpdateKey(taixe);
+                await DatXeAsync(khach);
             }
         }
 
-        private async Task DatXeAsync(IList<string> list, string key)
+        private async Task DatXeAsync(Key khach)
         {
-            string taixe = string.Empty;
-            for (int i = 0; i < list.Count; i++)
+            foreach (var item in khach.TaiXes)
             {
-                string tx = _cache.GetString("TaiXe#" + list[i]);
-                if (string.IsNullOrEmpty(tx))
+                var taixe = WebSocketConnectionManager.GetKeyById(item);
+                if(taixe.Status == (int)ENTrangThaiTaiXe.RANH)
                 {
-                    tx = _cache.GetString("TaiXeDangChay#" + list[i]);
-                }
-                if (string.IsNullOrEmpty(tx))
-                {
-                    var laixe = WebSocketConnectionManager.GetSocketById(list[i]);
+                    var laixe = WebSocketConnectionManager.GetSocketById(taixe);
                     if (laixe == null) continue;
-                    taixe = list[i];
-                    await RemoveItemListTaiXe(list, taixe, key);
+
                     await SendMessageAsync(laixe, "DatXe||");
-                    await _cache.SetStringAsync("TaiXe#" + taixe, key);
-                    await _cache.SetStringAsync("NguoiDat#" + key, taixe);
-                    break;
+
+                    khach.TaiXes.Remove(item);
+                    khach.TargetId = item;
+
+                    taixe.Status = (int)ENTrangThaiTaiXe.DANG_XACNHAN;
+                    taixe.TargetId = khach.Id;
+
+                    WebSocketConnectionManager.UpdateKey(taixe);
+                    WebSocketConnectionManager.UpdateKey(khach);
+                    return;
                 }
             }
-            if (string.IsNullOrEmpty(taixe))
-            {
-                await KhongCoTaiXe(key);
-            }
+            
+            await KhongCoTaiXe(khach);
         }
 
-        private async Task KhongCoTaiXe(string key)
+        private async Task KhongCoTaiXe(Key khach)
         {
-            await SendMessageAsync(key, "Chat|| Khong con tai xe");
-            string taixe = _cache.GetString("NguoiDat#" + key);
-            await _cache.RemoveAsync("ListTaiXe#" + key);
-            await _cache.RemoveAsync("NguoiDat#" + key);
-            await _cache.RemoveAsync("TaiXe#" + taixe);
-        }
-
-        private async Task RemoveItemListTaiXe(IList<string> list, string item, string key)
-        {
-            int index = list.IndexOf(item);
-            if (index > -1)
+            await SendMessageAsync(khach, "Chat|| Khong con tai xe");
+            Key taixe = WebSocketConnectionManager.GetKeyById(khach.TargetId);
+            if (taixe != null)
             {
-                list.RemoveAt(index);
-                await _cache.SetStringAsync("ListTaiXe#" + key, string.Join(",", list));
+                taixe.TargetId = string.Empty;
+                taixe.Status = (int)ENTrangThaiTaiXe.RANH;
+                WebSocketConnectionManager.UpdateKey(taixe);
             }
+            khach.TaiXes = null;
+            khach.TargetId = string.Empty;
+            khach.Status = (int)ENTrangThaiKhach.RANH;
+            WebSocketConnectionManager.UpdateKey(khach);
         }
     }
 }
