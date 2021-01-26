@@ -25,6 +25,9 @@
             sendMessage("Chat", "Connected");
         };
         socket.onclose = function (event) {
+            setTimeout(function () {
+                connect();
+            }, 1000);
             console.log("closed connection from " + uri);
         };
         socket.onmessage = function (event) {
@@ -45,7 +48,6 @@
                     appendItem(list, data);
                     break;
             }
-            console.log(event.data);
         };
         socket.onerror = function (event) {
             console.log("error: " + event.data);

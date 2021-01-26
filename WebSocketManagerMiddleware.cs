@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,7 +24,7 @@ namespace NetSockets
                 return;
             using (WebSocket socket = await context.WebSockets.AcceptWebSocketAsync())
             {
-                _webSocketHandler.OnConnected(socket, context.Request.Query["_"].ToString());
+                await _webSocketHandler.OnConnected(socket, context.Request.Query["_"].ToString());
                 await Receive(socket, async (result, buffer) =>
                 {
                     if (result.MessageType == WebSocketMessageType.Text)
@@ -34,13 +32,11 @@ namespace NetSockets
                         await _webSocketHandler.ReceiveAsync(socket, result, buffer);
                         return;
                     }
-
                     else if (result.MessageType == WebSocketMessageType.Close)
                     {
                         await _webSocketHandler.OnDisconnected(socket);
                         return;
                     }
-
                 });
             }
 

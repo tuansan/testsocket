@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.WebSockets;
+﻿using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,9 +14,12 @@ namespace NetSockets
             WebSocketConnectionManager = webSocketConnectionManager;
         }
 
-        public virtual void OnConnected(WebSocket socket, string key)
+        public virtual async Task OnConnected(WebSocket socket, string key)
         {
-            WebSocketConnectionManager.AddSocket(socket, key);
+            var sk = WebSocketConnectionManager.GetSocketById(key);
+            if (sk != null)
+                await WebSocketConnectionManager.RemoveSocket(key);
+            await WebSocketConnectionManager.AddSocketAsync(socket, key);
         }
 
         public virtual async Task OnDisconnected(WebSocket socket)
@@ -33,10 +33,7 @@ namespace NetSockets
             {
                 if (socket.State != WebSocketState.Open)
                     return;
-
-                await socket.SendAsync(buffer: new ArraySegment<byte>(array: Encoding.ASCII.GetBytes(message),
-                                                                      offset: 0,
-                                                                      count: message.Length),
+                await socket.SendAsync(Encoding.UTF8.GetBytes(message),
                                        messageType: WebSocketMessageType.Text,
                                        endOfMessage: true,
                                        cancellationToken: CancellationToken.None);

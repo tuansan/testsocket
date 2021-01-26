@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.WebSockets;
@@ -29,18 +28,18 @@ namespace NetSockets
 
         public string GetId(WebSocket socket)
         {
-            return _sockets.LastOrDefault(p => p.Value == socket).Key?? string.Empty;
+            return _sockets.LastOrDefault(p => p.Value == socket).Key ?? string.Empty;
         }
 
-        public void AddSocket(WebSocket socket, string key)
+        public async Task AddSocketAsync(WebSocket socket, string key)
         {
-            _sockets.TryAdd(key, socket);
+            if (!_sockets.TryAdd(key, socket))
+                await RemoveSocket(key);
         }
 
-        public async Task UpdateKeyAsync(string id, string newKey)
+        public void UpdateKey(string key, string newKey)
         {
-            _sockets.TryRemove(id, out WebSocket socket);
-            await RemoveSocket(newKey);
+            _sockets.TryRemove(key, out WebSocket socket);
             _sockets.TryAdd(newKey, socket);
         }
 

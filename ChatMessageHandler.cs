@@ -1,10 +1,8 @@
 ﻿using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Caching.Memory;
 using NetSockets.Models;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
@@ -63,11 +61,13 @@ namespace NetSockets
                         if (string.IsNullOrEmpty(check))
                             await DatXeAsync(list, socketId);
                         break;
+
                     case "KetThuc":
                         nguoidat = _cache.GetString("TaiXeDangChay#" + socketId);
                         await _cache.RemoveAsync("TaiXeDangChay#" + socketId);
                         await _cache.RemoveAsync("NguoiDatDangChay#" + nguoidat);
                         break;
+
                     case "Ok":
                         nguoidat = _cache.GetString("TaiXe#" + socketId);
                         taixe = _cache.GetString("NguoiDat#" + nguoidat);
@@ -88,9 +88,9 @@ namespace NetSockets
                                 await _cache.SetStringAsync("NguoiDatDangChay#" + nguoidat, taixe);
                                 await SendMessageToAllAsync("---------------------------------");
                             }
-
                         }
                         break;
+
                     case "Cancel":
                         nguoidat = _cache.GetString("TaiXe#" + socketId);
                         taixe = _cache.GetString("NguoiDat#" + nguoidat);
@@ -100,6 +100,7 @@ namespace NetSockets
                             await SendMessageAsync(socket, "---------------------------------");
                         }
                         break;
+
                     default:
                         res = "Chat||" + socketId + ": " + param.Text;
                         await SendMessageToAllAsync(res);
@@ -123,7 +124,6 @@ namespace NetSockets
                 await _cache.RemoveAsync("TaiXe#" + taixe);
                 await DatXeAsync(list, key);
             }
-
         }
 
         private async Task DatXeAsync(IList<string> list, string key)
@@ -138,29 +138,19 @@ namespace NetSockets
                 }
                 if (string.IsNullOrEmpty(tx))
                 {
+                    var laixe = WebSocketConnectionManager.GetSocketById(list[i]);
+                    if (laixe == null) continue;
                     taixe = list[i];
                     await RemoveItemListTaiXe(list, taixe, key);
+                    await SendMessageAsync(laixe, "DatXe||");
+                    await _cache.SetStringAsync("TaiXe#" + taixe, key);
+                    await _cache.SetStringAsync("NguoiDat#" + key, taixe);
                     break;
                 }
             }
             if (string.IsNullOrEmpty(taixe))
             {
                 await KhongCoTaiXe(key);
-            }
-            else
-            {
-                var laixe = WebSocketConnectionManager.GetSocketById(taixe);
-                if (laixe != null)
-                {
-                    await SendMessageAsync(laixe, "DatXe||" + key);
-                    await _cache.SetStringAsync("TaiXe#" + taixe, key);
-                    await _cache.SetStringAsync("NguoiDat#" + key, taixe);
-                }
-                else
-                {
-                    await RemoveItemListTaiXe(list, taixe, key);
-                    await NextTaiXeAsync(key);
-                }
             }
         }
 
@@ -176,7 +166,7 @@ namespace NetSockets
         private async Task RemoveItemListTaiXe(IList<string> list, string item, string key)
         {
             int index = list.IndexOf(item);
-            if(index > -1)
+            if (index > -1)
             {
                 list.RemoveAt(index);
                 await _cache.SetStringAsync("ListTaiXe#" + key, string.Join(",", list));
