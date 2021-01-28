@@ -21,13 +21,8 @@ namespace NetSockets.Models
         Khach = 1, TaiXe = 2
     }
 
-    public enum ENTrangThaiTaiXe
+    public enum ENTrangThaiUser
     {
         RANH, DANG_XACNHAN, DANG_CHAY
-    }
-
-    public enum ENTrangThaiKhach
-    {
-        RANH, DANG_YEUCAU, DANG_CHAY
     }
 }

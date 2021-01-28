@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace NetSockets
 {
-    public static class WebSocketManagerExtensions
+    public static class ManagerExtensions
     {
         public static IServiceCollection AddWebSocketManager(this IServiceCollection services)
         {
@@ -22,11 +22,11 @@ namespace NetSockets
             return services;
         }
 
-        public static IApplicationBuilder MapWebSocketManager(this IApplicationBuilder app,
+        public static IApplicationBuilder MapKhachWebSocketManager(this IApplicationBuilder app,
                                                               PathString path,
                                                               WebSocketHandler handler)
         {
-            return app.Map(path, (_app) => _app.UseMiddleware<WebSocketManagerMiddleware>(handler));
+            return app.Map(path, (_app) => _app.UseMiddleware<ManagerMiddleware>(handler));
         }
     }
 }

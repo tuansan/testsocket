@@ -1,13 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
-namespace NetSockets.Models
+﻿namespace NetSockets.Models
 {
     public class SocketModel
     {
-        public string Action { get; set; }
+        public int Action { get; set; }
         public string Text { get; set; }
+    }
+
+    public enum ENActionSend
+    {
+        CHAT,
+        POPUP,
+        BAT_DAU,
+        XAC_NHAN,
+        KET_THUC
+    }
+
+    public enum ENActionReceive
+    {
+        CHAT,
+        DAT_XE,
+        HUY_DAT,
+        OK,
+        CANCEL,
+        END
     }
 }

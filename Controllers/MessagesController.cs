@@ -7,9 +7,9 @@ namespace NetSockets.Controllers
 {
     public class MessagesController : Controller
     {
-        private ChatMessageHandler _chatMessageHandler { get; set; }
+        private MessageHandler _chatMessageHandler { get; set; }
 
-        public MessagesController(ChatMessageHandler chatMessageHandler)
+        public MessagesController(MessageHandler chatMessageHandler)
         {
             _chatMessageHandler = chatMessageHandler;
         }
@@ -17,7 +17,7 @@ namespace NetSockets.Controllers
         [HttpGet]
         public async Task SendMessage([FromQueryAttribute] string message)
         {
-            await _chatMessageHandler.SendMessageToAllAsync(message);
+            await _chatMessageHandler.SendMessageToAllAsync(0, message);
         }
     }
 }

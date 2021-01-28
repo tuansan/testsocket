@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 
 namespace NetSockets
 {
-    public class WebSocketManagerMiddleware
+    public class ManagerMiddleware
     {
         private readonly RequestDelegate _next;
         private WebSocketHandler _webSocketHandler { get; set; }
 
-        public WebSocketManagerMiddleware(RequestDelegate next,
+        public ManagerMiddleware(RequestDelegate next,
                                           WebSocketHandler webSocketHandler)
         {
             _next = next;
@@ -26,10 +26,14 @@ namespace NetSockets
             using (WebSocket socket = await context.WebSockets.AcceptWebSocketAsync())
             {
                 string id = context.Request.Query["id"].ToString();
+                string name = context.Request.Query["name"].ToString();
+                if (string.IsNullOrEmpty(name))
+                    name = id;
                 int local = int.Parse(id);
-                await _webSocketHandler.OnConnected(socket, new Key { 
-                    Id = id, 
-                    Name = id,
+                await _webSocketHandler.OnConnected(socket, new Key
+                {
+                    Id = id,
+                    Name = name,
                     Local = local * 123 + "",
                     Role = local > 10 ? (int)ENVaiTro.TaiXe : (int)ENVaiTro.Khach
                 });

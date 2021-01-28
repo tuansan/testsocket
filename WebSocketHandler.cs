@@ -1,4 +1,5 @@
 ﻿using NetSockets.Models;
+using Newtonsoft.Json;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
@@ -8,30 +9,35 @@ namespace NetSockets
 {
     public abstract class WebSocketHandler
     {
-        protected ConnectionManager WebSocketConnectionManager { get; set; }
+        protected ConnectionManager _connect { get; set; }
 
-        public WebSocketHandler(ConnectionManager webSocketConnectionManager)
+        protected WebSocketHandler(ConnectionManager connectionManager)
         {
-            WebSocketConnectionManager = webSocketConnectionManager;
+            _connect = connectionManager;
         }
 
         public virtual async Task OnConnected(WebSocket socket, Key key)
         {
-            var sk = WebSocketConnectionManager.GetSocketById(key.Id);
-            if (sk != null)
-                await WebSocketConnectionManager.RemoveSocket(key);
-            await WebSocketConnectionManager.AddSocketAsync(socket, key);
+            await _connect.AddSocketAsync(socket, key);
         }
 
         public virtual async Task OnDisconnected(WebSocket socket)
         {
-            await WebSocketConnectionManager.RemoveSocket(WebSocketConnectionManager.GetId(socket));
+            await _connect.RemoveSocket(_connect.GetKeyBySocket(socket));
         }
 
-        public async Task SendMessageAsync(WebSocket socket, string message)
+        private string SendConvertJson(int action, string message)
+        {
+            var res = new SocketModel { Action = action, Text = message };
+            return JsonConvert.SerializeObject(res);
+        }
+
+        public async Task SendMessageAsync(WebSocket socket, int action, string message)
         {
             try
             {
+                message = SendConvertJson(action, message);
+
                 if (socket.State != WebSocketState.Open)
                     return;
                 await socket.SendAsync(Encoding.UTF8.GetBytes(message),
@@ -42,22 +48,22 @@ namespace NetSockets
             catch { }
         }
 
-        public async Task SendMessageAsync(Key socketId, string message)
+        public async Task SendMessageAsync(Key socketId, int action, string message)
         {
-            await SendMessageAsync(WebSocketConnectionManager.GetSocketById(socketId), message);
+            await SendMessageAsync(_connect.GetSocketById(socketId), action, message);
         }
 
-        public async Task SendMessageAsync(string socketId, string message)
+        public async Task SendMessageAsync(string socketId, int action, string message)
         {
-            await SendMessageAsync(WebSocketConnectionManager.GetSocketById(socketId), message);
+            await SendMessageAsync(_connect.GetSocketById(socketId), action, message);
         }
 
-        public async Task SendMessageToAllAsync(string message)
+        public async Task SendMessageToAllAsync(int action, string message)
         {
-            foreach (var pair in WebSocketConnectionManager.GetAll())
+            foreach (var pair in _connect.GetAll())
             {
                 if (pair.Value.State == WebSocketState.Open)
-                    await SendMessageAsync(pair.Value, message);
+                    await SendMessageAsync(pair.Value, action, message);
             }
         }
 

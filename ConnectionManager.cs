@@ -29,15 +29,15 @@ namespace NetSockets
 
         public IList<Key> GetAllLaiXe()
         {
-            return _sockets.Where(p => int.Parse(p.Key.Id) > 10).Take(20).Select(s => s.Key).ToList();
+            return _sockets.Where(p => p.Key.Role == (int)ENVaiTro.TaiXe).Take(20).Select(s => s.Key).ToList();
         }
 
         public Key GetKeyById(string id)
         {
-            return _sockets.FirstOrDefault(p => p.Key.Id == id).Key;
+            return _sockets.LastOrDefault(p => p.Key.Id == id).Key ?? null;
         }
 
-        public Key GetId(WebSocket socket)
+        public Key GetKeyBySocket(WebSocket socket)
         {
             return _sockets.LastOrDefault(p => p.Value == socket).Key ?? null;
         }
@@ -45,13 +45,16 @@ namespace NetSockets
         public async Task AddSocketAsync(WebSocket socket, Key key)
         {
             if (!_sockets.TryAdd(key, socket))
+            {
                 await RemoveSocket(key);
+                _sockets.TryAdd(key, socket);
+            }
         }
 
         public void UpdateKey(Key newKey)
         {
-            _sockets.TryRemove(GetKeyById(newKey.Id), out WebSocket socket);
-            _sockets.TryAdd(newKey, socket);
+            if (_sockets.TryRemove(GetKeyById(newKey.Id), out WebSocket socket))
+                _sockets.TryAdd(newKey, socket);
         }
 
         public async Task RemoveSocket(Key id)

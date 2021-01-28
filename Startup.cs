@@ -19,6 +19,7 @@ namespace NetSockets
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddDistributedMemoryCache();
             services.AddControllersWithViews();
             services.AddWebSocketManager();
         }
@@ -35,7 +36,7 @@ namespace NetSockets
             };
             webSocketOptions.AllowedOrigins.Add("*");
             app.UseWebSockets();
-            app.MapWebSocketManager("/websocket", serviceProvider.GetService<ChatMessageHandler>());
+            app.MapKhachWebSocketManager("/websocket", serviceProvider.GetService<MessageHandler>());
 
             if (env.IsDevelopment())
             {
