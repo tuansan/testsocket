@@ -7,26 +7,26 @@ namespace NetSockets
 {
     public static class ManagerExtensions
     {
-        public static IServiceCollection AddWebSocketManager(this IServiceCollection services)
+        public static void AddWebSocketManager(this IServiceCollection services)
         {
             services.AddTransient<ConnectionManager>();
 
-            foreach (var type in Assembly.GetEntryAssembly().ExportedTypes)
+            var exportedTypes = Assembly.GetEntryAssembly()?.ExportedTypes;
+            if (exportedTypes == null) return;
+            foreach (var type in exportedTypes)
             {
                 if (type.GetTypeInfo().BaseType == typeof(WebSocketHandler))
                 {
                     services.AddSingleton(type);
                 }
             }
-
-            return services;
         }
 
-        public static IApplicationBuilder MapKhachWebSocketManager(this IApplicationBuilder app,
-                                                              PathString path,
-                                                              WebSocketHandler handler)
+        public static void MapWebSocketManager(this IApplicationBuilder app,
+            PathString path,
+            WebSocketHandler handler)
         {
-            return app.Map(path, (_app) => _app.UseMiddleware<ManagerMiddleware>(handler));
+            app.Map(path, (_app) => _app.UseMiddleware<ManagerMiddleware>(handler));
         }
     }
 }

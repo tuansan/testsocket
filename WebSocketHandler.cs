@@ -9,7 +9,7 @@ namespace NetSockets
 {
     public abstract class WebSocketHandler
     {
-        protected ConnectionManager _connect { get; set; }
+        protected ConnectionManager _connect { get; }
 
         protected WebSocketHandler(ConnectionManager connectionManager)
         {
@@ -32,7 +32,7 @@ namespace NetSockets
             return JsonConvert.SerializeObject(res);
         }
 
-        public async Task SendMessageAsync(WebSocket socket, int action, string message)
+        protected async Task SendMessageAsync(WebSocket socket, int action, string message)
         {
             try
             {
@@ -45,15 +45,18 @@ namespace NetSockets
                                        endOfMessage: true,
                                        cancellationToken: CancellationToken.None);
             }
-            catch { }
+            catch
+            {
+                // ignored
+            }
         }
 
-        public async Task SendMessageAsync(Key socketId, int action, string message)
+        protected async Task SendMessageAsync(Key socketId, int action, string message)
         {
             await SendMessageAsync(_connect.GetSocketById(socketId), action, message);
         }
 
-        public async Task SendMessageAsync(string socketId, int action, string message)
+        protected async Task SendMessageAsync(string socketId, int action, string message)
         {
             await SendMessageAsync(_connect.GetSocketById(socketId), action, message);
         }

@@ -10,7 +10,7 @@ namespace NetSockets
 {
     public class ConnectionManager
     {
-        private ConcurrentDictionary<Key, WebSocket> _sockets = new ConcurrentDictionary<Key, WebSocket>();
+        private readonly ConcurrentDictionary<Key, WebSocket> _sockets = new();
 
         public WebSocket GetSocketById(string id)
         {

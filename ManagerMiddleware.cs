@@ -9,13 +9,10 @@ namespace NetSockets
 {
     public class ManagerMiddleware
     {
-        private readonly RequestDelegate _next;
-        private WebSocketHandler _webSocketHandler { get; set; }
+        private WebSocketHandler _webSocketHandler { get; }
 
-        public ManagerMiddleware(RequestDelegate next,
-                                          WebSocketHandler webSocketHandler)
+        public ManagerMiddleware(WebSocketHandler webSocketHandler)
         {
-            _next = next;
             _webSocketHandler = webSocketHandler;
         }
 
@@ -23,40 +20,38 @@ namespace NetSockets
         {
             if (!context.WebSockets.IsWebSocketRequest)
                 return;
-            using (WebSocket socket = await context.WebSockets.AcceptWebSocketAsync())
+            using WebSocket socket = await context.WebSockets.AcceptWebSocketAsync();
+            string id = context.Request.Query["id"].ToString();
+            string name = context.Request.Query["name"].ToString();
+            if (string.IsNullOrEmpty(name))
+                name = id;
+            int local = int.Parse(id);
+            await _webSocketHandler.OnConnected(socket, new Key
             {
-                string id = context.Request.Query["id"].ToString();
-                string name = context.Request.Query["name"].ToString();
-                if (string.IsNullOrEmpty(name))
-                    name = id;
-                int local = int.Parse(id);
-                await _webSocketHandler.OnConnected(socket, new Key
+                Id = id,
+                Name = name,
+                Local = local * 123 + "",
+                Role = local > 10 ? (int)ENVaiTro.TaiXe : (int)ENVaiTro.Khach
+            });
+            await Receive(socket, async (result, buffer) =>
+            {
+                switch (result.MessageType)
                 {
-                    Id = id,
-                    Name = name,
-                    Local = local * 123 + "",
-                    Role = local > 10 ? (int)ENVaiTro.TaiXe : (int)ENVaiTro.Khach
-                });
-                await Receive(socket, async (result, buffer) =>
-                {
-                    if (result.MessageType == WebSocketMessageType.Text)
-                    {
+                    case WebSocketMessageType.Text:
                         await _webSocketHandler.ReceiveAsync(socket, result, buffer);
                         return;
-                    }
-                    else if (result.MessageType == WebSocketMessageType.Close)
-                    {
+
+                    case WebSocketMessageType.Close:
                         await _webSocketHandler.OnDisconnected(socket);
                         return;
-                    }
-                });
-            }
 
-            //TODO - investigate the Kestrel exception thrown when this is the last middleware
-            await _next.Invoke(context);
+                    case WebSocketMessageType.Binary:
+                        break;
+                }
+            });
         }
 
-        private async Task Receive(WebSocket socket, Action<WebSocketReceiveResult, byte[]> handleMessage)
+        private static async Task Receive(WebSocket socket, Action<WebSocketReceiveResult, byte[]> handleMessage)
         {
             var buffer = new byte[1024 * 4];
 

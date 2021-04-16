@@ -2,7 +2,7 @@
     ViewData["Title"] = "Noti";
 }
 
-<input type=text id="textInput" placeholder="Enter your text" />
+<input type="text" id="textInput" placeholder="Enter your text" />
 <button id="sendButton">Send</button>
 
 <ul id="messages"></ul>
@@ -10,15 +10,15 @@
 <script language="javascript" type="text/javascript">
     var button = document.getElementById("sendButton");
     button.addEventListener("click", function() {
-        var input = document.getElementById("textInput");
+        const input = document.getElementById("textInput");
         sendMessage(input.value);
 
         input.value = "";
     });
     function sendMessage(message) {
-        console.log("Sending: " + message);
+        console.log(`Sending: ${message}`);
         $.ajax({
-            url: "http://" + window.location.host + "/messages/sendmessage?message=" + message,
+            url: `http://${window.location.host}/messages/sendmessage?message=${message}`,
             method: 'GET',
         });
     }

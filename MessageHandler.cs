@@ -9,12 +9,12 @@ using System.Threading.Tasks;
 
 namespace NetSockets
 {
-    public class MessageHandler : WebSocketHandler
+    public abstract class MessageHandler : WebSocketHandler
     {
         private readonly IDistributedCache _cache;
         private readonly Random _random = new Random();
 
-        public MessageHandler(ConnectionManager connectionManager, IDistributedCache cache) : base(connectionManager)
+        protected MessageHandler(ConnectionManager connectionManager, IDistributedCache cache) : base(connectionManager)
         {
             _cache = cache;
         }
@@ -60,7 +60,7 @@ namespace NetSockets
             {
                 await SendMessageToAllAsync((int)ENActionSend.CHAT, $"{key.Name}: Disconnected");
             }
-            if (key.Role == (int)ENVaiTro.TaiXe && key.Status == (int)ENTrangThaiUser.DANG_XACNHAN)
+            if (key is {Role: (int)ENVaiTro.TaiXe, Status: (int)ENTrangThaiUser.DANG_XACNHAN})
             {
                 await NextTaiXeAsync(_connect.GetKeyById(key.TargetId));
             }
@@ -73,8 +73,8 @@ namespace NetSockets
                 var user = _connect.GetKeyBySocket(socket);
                 var message = Encoding.UTF8.GetString(buffer, 0, result.Count);
                 var param = JsonConvert.DeserializeObject<SocketModel>(message);
-                Key khach = new Key();
-                Key taixe = new Key();
+                Key khach;
+                Key taixe;
                 if (user.Role == (int)ENVaiTro.Khach)
                 {
                     khach = user;
@@ -140,7 +140,7 @@ namespace NetSockets
                         break;
 
                     case (int)ENActionReceive.CANCEL:
-                        if (taixe.Status == (int)ENTrangThaiUser.DANG_XACNHAN && khach.TargetId.Equals(taixe?.Id))
+                        if (taixe.Status == (int)ENTrangThaiUser.DANG_XACNHAN && khach.TargetId.Equals(taixe.Id))
                         {
                             await NextTaiXeAsync(khach);
                             await SendMessageAsync(socket, (int)ENActionSend.POPUP, "Đã từ trối");
@@ -174,10 +174,13 @@ namespace NetSockets
                         break;
                 }
             }
-            catch { }
+            catch
+            {
+                // ignored
+            }
         }
 
-        public async Task NextTaiXeAsync(Key khach)
+        private async Task NextTaiXeAsync(Key khach)
         {
             if (khach?.Status == (int)ENTrangThaiUser.DANG_XACNHAN)
             {

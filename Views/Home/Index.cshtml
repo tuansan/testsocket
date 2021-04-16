@@ -3,7 +3,7 @@
     ViewData["Title"] = "Home Page";
 }
 
-<input type=text id="textInput" placeholder="Enter your text" />
+<input type="text" id="textInput" placeholder="Enter your text" />
 <button id="sendButton">Send</button>
 <div id="display-xacnhan" style="display: none">
     <button id="okButton">Ok</button>
@@ -19,20 +19,20 @@
     var id = @Model;
     if (id == 0)
         id = Math.floor(Math.random() * 10000) + 10;
-    var uri = `wss://${window.location.host}/websocket?id=${id}&name=${id*10}`;
+    var uri = `wss://${window.location.host}/chat?id=${id}&name=${id*10}`;
     function connect() {
         socket = new WebSocket(uri);
-        socket.onopen = function (event) {
+        socket.onopen = function () {
             sendMessage(0, "Connected");
         };
-        socket.onclose = function (event) {
+        socket.onclose = function () {
             setTimeout(function () {
                 connect();
             }, 1000);
-            console.log("closed connection from " + uri);
+            console.log(`closed connection from ${uri}`);
         };
         socket.onmessage = function (event) {
-            var data = JSON.parse(event.data);
+            const data = JSON.parse(event.data);
             switch (data.Action) {
                 case 0:
                 case 1:
@@ -57,10 +57,11 @@
             }
         };
         socket.onerror = function (event) {
-            console.log("error: " + event.data);
+            console.log(`error: ${event.data}`);
         };
     }
     connect();
+
     var list = document.getElementById("messages");
     var button = document.getElementById("sendButton");
     var buttonOk = document.getElementById("okButton");
@@ -106,7 +107,7 @@
         socket.send(JSON.stringify({ Action: Number(action), Text: text }));
     }
     function appendItem(list, message) {
-        var item = document.createElement("li");
+        const item = document.createElement("li");
         item.appendChild(document.createTextNode(message));
         list.insertBefore(item, list.firstChild);
     }
